@@ -1,0 +1,3 @@
+# PawPals
+
+###### Aplikacija koja je namenjena vlasnicima kućnih ljubimaca omogućava korisnicima da pronađu i povežu se sa drugim vlasnicima ljubimaca u svojoj okolini. Korisnici mogu pratiti svoju trenutnu lokaciju i videti druge ljude koji šetaju svoje pse u blizini u realnom vremenu. Aplikacija omogućava dodavanje novih staza za šetanje, ocenjivanje i komentarisanje postojećih, kao i organizovanje zajedničkih šetnji pasa. Korisnici mogu primati notifikacije kada su drugi vlasnici ljubimaca u blizini i komunicirati s njima putem aplikacije. Takođe, postoji mogućnost međusobnog ocenjivanja korisnika i prikazivanja rang liste na osnovu prikupljenih poena za interakcije i aktivnosti.
