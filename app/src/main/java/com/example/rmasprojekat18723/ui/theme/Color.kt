@@ -19,3 +19,7 @@ val TextFieldColor = Color(0xFF9EA4A4)
 val BgColor = Color(0xFF4A4C4C)
 
 val Secondary = Color(0xFF030335)
+
+val ButtonColor1 = Color(0xFFf2ebeb)
+
+val ButtonColor2 = Color(0xFF0ee627)

@@ -22,9 +22,9 @@ fun MyNavigation(navHostController: NavHostController) {
         navigation(startDestination = Route.LoginScreen().name, route = "login_flow") {
             composable(route = Route.LoginScreen().name) {
                 LoginScreen(
-                    onLoginClick =  {
+                    onLoginSuccess =  {
                         navHostController.navigate(Route.HomeScreen().name) {
-                            popUpTo("login_flow") {
+                            popUpTo(Route.LoginScreen().name){
                                 inclusive = true
                             }
                         }
@@ -35,13 +35,24 @@ fun MyNavigation(navHostController: NavHostController) {
                 )
             }
             composable(route = Route.SignUpScreen().name) {
-                SignUpScreen(onSignUpClick = {
-                    navHostController.navigate(Route.LoginScreen().name)
-                })
+                SignUpScreen(onSignupSuccess = {
+                    navHostController.navigate(Route.LoginScreen().name) {
+                        popUpTo(Route.SignUpScreen().name) {
+                            inclusive = true
+                        }
+                    }
+                }
+                )
             }
         }
         composable(route = Route.HomeScreen().name) {
-            HomeScreen()
+            HomeScreen(signOut = {
+                navHostController.navigate(Route.LoginScreen().name) {
+                    popUpTo(Route.HomeScreen().name) {
+                        inclusive = true
+                    }
+                }
+            })
         }
     }
 }

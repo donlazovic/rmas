@@ -1,7 +1,8 @@
 package com.example.rmasprojekat18723.Screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,8 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -20,48 +21,53 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role.Companion.Button
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.rmasprojekat18723.Components.DontHaveAccount
-import com.example.rmasprojekat18723.Components.PasswordFieldComponent
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rmasprojekat18723.Components.SignUpTextComponent
 import com.example.rmasprojekat18723.Components.TextFieldComponent
 import com.example.rmasprojekat18723.R
+import com.example.rmasprojekat18723.data.SignUpViewModel
+import com.example.rmasprojekat18723.data.SignUpUIEvent
+import com.example.rmasprojekat18723.ui.theme.ButtonColor1
+import com.example.rmasprojekat18723.ui.theme.ButtonColor2
 import com.example.rmasprojekat18723.ui.theme.Secondary
 
 
 @Composable
-fun SignUpScreen(onSignUpClick: () -> Unit)
+fun SignUpScreen(onSignupSuccess: () -> Unit , signUpViewModel: SignUpViewModel = viewModel())
 {
-    var username by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
-    var surname by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
+    val registrationState = signUpViewModel.registrationUIState.value
+
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     var isPasswordSame by remember { mutableStateOf(false) }
 
-    val isFieldsEmpty = username.isNotEmpty() && password.isNotEmpty()  && name.isNotEmpty()&& surname.isNotEmpty()&& phoneNumber.isNotEmpty()
-            && email.isNotEmpty()  && confirmPassword.isNotEmpty()
+    var isPasswordSameError by remember { mutableStateOf<String?>(null) }
+
+    val isFieldsEmpty = registrationState.username.isNotEmpty() && registrationState.password.isNotEmpty()  && registrationState.name.isNotEmpty()&& registrationState.surname.isNotEmpty()&&
+            registrationState.phoneNumber.isNotEmpty() && registrationState.email.isNotEmpty()  && registrationState.confirmPassword.isNotEmpty()
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -74,10 +80,13 @@ fun SignUpScreen(onSignUpClick: () -> Unit)
             .padding(8.dp)
             .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally) {
-            AnimatedVisibility(isPasswordSame) {
-                Text( text = "Passwords are not matching",
-                    color = MaterialTheme.colorScheme.error)
-                
+            isPasswordSameError?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(8.dp)
+                )
             }
             SignUpTextComponent(value = stringResource(id = R.string.Registration), modifier = Modifier
                 .fillMaxWidth()
@@ -88,96 +97,145 @@ fun SignUpScreen(onSignUpClick: () -> Unit)
                     .fillMaxWidth()
                     .padding(8.dp),
                 label = stringResource(id = R.string.Username),
-                value = username,
-                onValueChange = { username = it },
+                value = registrationState.username,
+                onValueChange = { signUpViewModel.onEvent(SignUpUIEvent.UsernameChange(it)) },
                 leadingIcon = Icons.Default.AccountCircle,
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
-                ),)
+                ),
+                errorStatus = signUpViewModel.registrationUIState.value.usernameError)
             TextFieldComponent(
                 Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
                 label = stringResource(id = R.string.Name),
-                value = name,
-                onValueChange = { name = it },
+                value = registrationState.name,
+                onValueChange = { signUpViewModel.onEvent(SignUpUIEvent.NameChange(it)) },
                 leadingIcon = Icons.Default.Person,
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
-                ),)
+                ),
+                errorStatus = signUpViewModel.registrationUIState.value.nameError)
             TextFieldComponent(
                 Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
                 label = stringResource(id = R.string.Surname),
-                value = surname,
-                onValueChange = { surname = it },
+                value = registrationState.surname,
+                onValueChange = { signUpViewModel.onEvent(SignUpUIEvent.SurnameChange(it)) },
                 leadingIcon = Icons.Default.Person,
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
-                ),)
+                ),
+                errorStatus = signUpViewModel.registrationUIState.value.surnameError)
             TextFieldComponent(
                 Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
                 label = stringResource(id = R.string.Phonenumber),
-                value = phoneNumber,
-                onValueChange = { phoneNumber = it },
+                value = registrationState.phoneNumber,
+                onValueChange = { signUpViewModel.onEvent(SignUpUIEvent.PhoneNumberChange(it)) },
                 leadingIcon = Icons.Default.Phone,
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Phone,
                     imeAction = ImeAction.Next
-                ),)
+                ),
+                errorStatus = signUpViewModel.registrationUIState.value.phoneNumberError)
             TextFieldComponent(
                 Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
                 label = stringResource(id = R.string.Email),
-                value = email,
-                onValueChange = { email = it },
+                value = registrationState.email,
+                onValueChange = { signUpViewModel.onEvent(SignUpUIEvent.EmailChange(it))  },
                 leadingIcon = Icons.Default.Email,
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
-                ),)
+                ),
+                errorStatus = signUpViewModel.registrationUIState.value.emailError)
             TextFieldComponent(
                 Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
                 label = stringResource(id = R.string.Password),
-                value = password,
-                onValueChange = { password = it },
+                value = registrationState.password,
+                onValueChange = { signUpViewModel.onEvent(SignUpUIEvent.PasswordChange(it))},
                 leadingIcon = Icons.Default.Lock,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Next
-                ),)
+                ),
+                trailingIcon = {
+                    Text(
+                        text = if (passwordVisible) "Hide" else "Show",
+                        modifier = Modifier
+                            .clickable { passwordVisible = !passwordVisible }
+                            .padding(horizontal = 8.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                },
+                errorStatus = signUpViewModel.registrationUIState.value.passwordError)
             TextFieldComponent(
                 Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
                 label = stringResource(id = R.string.Confirmpassword),
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it },
+                value = registrationState.confirmPassword,
+                onValueChange = { signUpViewModel.onEvent(SignUpUIEvent.ConfirmPasswordChange(it)) },
                 leadingIcon = Icons.Default.Lock,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (confirmPasswordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
-                ),)
+                ),
+                trailingIcon = {
+                    Text(
+                        text = if (confirmPasswordVisible) "Hide" else "Show",
+                        modifier = Modifier
+                            .clickable { confirmPasswordVisible = !confirmPasswordVisible }
+                            .padding(horizontal = 8.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    },
+                errorStatus = signUpViewModel.registrationUIState.value.confirmPasswordError)
             Spacer(modifier = Modifier.height(30.dp))
             Button( onClick = {
-                isPasswordSame = password != confirmPassword
+                isPasswordSame = registrationState.password != registrationState.confirmPassword
                 if(!isPasswordSame) {
-                    onSignUpClick()
+                    isPasswordSameError = null
+                    signUpViewModel.onEvent(SignUpUIEvent.RegisterClicked(onSignupSuccess))
                 }
+                else {
+                    isPasswordSameError = "Passwords do not match."
+                }
+
             } , modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(Color.Transparent),
                 enabled = isFieldsEmpty) {
-                Text("Sign Up")
+                Box(modifier = Modifier.fillMaxWidth().heightIn(48.dp)
+                    .background(
+                        brush = Brush.horizontalGradient(listOf(ButtonColor1, ButtonColor2)),
+                        shape = RoundedCornerShape(50.dp)
+                    ),
+                    contentAlignment = Alignment.Center) {
+                    Text(text = "Sign Up",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,)
+                }
             }
         }
 
