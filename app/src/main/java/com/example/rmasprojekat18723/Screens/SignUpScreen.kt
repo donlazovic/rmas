@@ -1,5 +1,11 @@
 package com.example.rmasprojekat18723.Screens
 
+
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -10,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -20,6 +27,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -44,6 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberImagePainter
 import com.example.rmasprojekat18723.Components.SignUpTextComponent
 import com.example.rmasprojekat18723.Components.TextFieldComponent
 import com.example.rmasprojekat18723.R
@@ -52,12 +62,51 @@ import com.example.rmasprojekat18723.data.SignUpUIEvent
 import com.example.rmasprojekat18723.ui.theme.ButtonColor1
 import com.example.rmasprojekat18723.ui.theme.ButtonColor2
 import com.example.rmasprojekat18723.ui.theme.Secondary
+import android.graphics.Bitmap
+import android.os.Environment
+import androidx.activity.result.contract.ActivityResultContracts.TakePicturePreview
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 
 
 @Composable
 fun SignUpScreen(onSignupSuccess: () -> Unit , signUpViewModel: SignUpViewModel = viewModel())
 {
     val registrationState = signUpViewModel.registrationUIState.value
+
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var capturedImageBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
+    // Launcher za biranje slike iz galerije
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri: Uri? ->
+            selectedImageUri = uri
+            signUpViewModel.onEvent(SignUpUIEvent.ImageSelected(uri))
+        }
+    )
+
+    // Launcher za slikanje kamerom
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = TakePicturePreview(),
+        onResult = { bitmap: Bitmap? ->
+            capturedImageBitmap = bitmap
+            bitmap?.let {
+                // Slika sa kamere biće sačuvana kao bitmap u state
+                val uri = saveBitmapToFile(context, it)
+                uri?.let { imageUri ->
+                    selectedImageUri = imageUri
+                    signUpViewModel.onEvent(SignUpUIEvent.ImageSelected(imageUri))
+                }
+            }
+        }
+    )
 
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
@@ -213,6 +262,64 @@ fun SignUpScreen(onSignupSuccess: () -> Unit , signUpViewModel: SignUpViewModel 
                     },
                 errorStatus = signUpViewModel.registrationUIState.value.confirmPasswordError)
             Spacer(modifier = Modifier.height(30.dp))
+
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(Color.Transparent),
+                onClick = { showDialog = true }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(48.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(listOf(ButtonColor1, ButtonColor2)),
+                            shape = RoundedCornerShape(50.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Pick or Take a Photo",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
+            if (showDialog) {
+                ShowPhotoSourceDialog(
+                    onDismiss = { showDialog = false },
+                    onCameraSelected = {
+                        takePictureLauncher.launch(null)
+                        showDialog = false
+                    },
+                    onGallerySelected = {
+                        pickImageLauncher.launch("image/*")
+                        showDialog = false
+                    }
+                )
+            }
+
+            selectedImageUri?.let {
+                Image(
+                    painter = rememberImagePainter(it),
+                    contentDescription = "Selected image",
+                    modifier = Modifier.size(128.dp)
+                )
+            } ?: capturedImageBitmap?.let {
+                Image(
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = "Captured image",
+                    modifier = Modifier.size(128.dp)
+                )
+            }
+
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             Button( onClick = {
                 isPasswordSame = registrationState.password != registrationState.confirmPassword
                 if(!isPasswordSame) {
@@ -226,7 +333,9 @@ fun SignUpScreen(onSignupSuccess: () -> Unit , signUpViewModel: SignUpViewModel 
             } , modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(Color.Transparent),
                 enabled = isFieldsEmpty) {
-                Box(modifier = Modifier.fillMaxWidth().heightIn(48.dp)
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(48.dp)
                     .background(
                         brush = Brush.horizontalGradient(listOf(ButtonColor1, ButtonColor2)),
                         shape = RoundedCornerShape(50.dp)
@@ -237,11 +346,63 @@ fun SignUpScreen(onSignupSuccess: () -> Unit , signUpViewModel: SignUpViewModel 
                         fontWeight = FontWeight.Bold,)
                 }
             }
+
         }
 
 
     }
 }
+
+@Composable
+fun ShowPhotoSourceDialog(
+    onDismiss: () -> Unit,
+    onCameraSelected: () -> Unit,
+    onGallerySelected: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text(text = "Choose photo source") },
+        text = { Text(text = "Please select a photo source: Camera or Gallery.") },
+        confirmButton = {
+            Button(onClick = {
+                onCameraSelected()
+                onDismiss()
+            }) {
+                Text("Camera")
+            }
+        },
+        dismissButton = {
+            Button(onClick = {
+                onGallerySelected()
+                onDismiss()
+            }) {
+                Text("Gallery")
+            }
+        }
+    )
+}
+
+fun saveBitmapToFile(context: Context, bitmap: Bitmap): Uri? {
+    val fileName = "${System.currentTimeMillis()}.jpg"
+    val directory = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+    val imageFile = File(directory, fileName)
+    var outputStream: FileOutputStream? = null
+
+    try {
+        outputStream = FileOutputStream(imageFile)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+        outputStream.flush()
+        return Uri.fromFile(imageFile)
+    } catch (e: IOException) {
+        e.printStackTrace()
+    } finally {
+        outputStream?.close()
+    }
+    return null
+}
+
+
+
 
 @Preview (showBackground = true)
 @Composable

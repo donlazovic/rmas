@@ -1,10 +1,14 @@
 package com.example.rmasprojekat18723.data
 
+import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.example.rmasprojekat18723.data.rules.Validator
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuth.AuthStateListener
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 
 class SignUpViewModel : ViewModel() {
 
@@ -62,6 +66,11 @@ class SignUpViewModel : ViewModel() {
             is SignUpUIEvent.SignOutClicked -> {
                 signOut(event.onSignOut)
             }
+            is SignUpUIEvent.ImageSelected -> {
+                registrationUIState.value = registrationUIState.value.copy(
+                    profileImageUri = event.imageUri
+                )
+            }
 
 
         }
@@ -72,13 +81,27 @@ class SignUpViewModel : ViewModel() {
         val pass = validateDataWithRules()
 
         if (pass) {
-            createUserInFirebase(
+            registerUser(
+                username = registrationUIState.value.username,
                 email = registrationUIState.value.email,
                 password = registrationUIState.value.password,
-                onSuccess = onSuccess,
+                name = registrationUIState.value.name,
+                surname = registrationUIState.value.surname,
+                phoneNumber = registrationUIState.value.phoneNumber,
+                imageUri = registrationUIState.value.profileImageUri,
+                onResult = { success, message ->
+                    if (success) {
+                        onSuccess()
+                    } else {
+                        Log.e("SignUpViewModel", "Registration failed: $message")
+                    }
+                }
             )
+        } else {
+            Log.e("SignUpViewModel", "Validation failed")
         }
     }
+
 
     private fun signOut(signOut: () -> Unit) {
 
@@ -120,18 +143,74 @@ class SignUpViewModel : ViewModel() {
 
     }
 
-    private fun createUserInFirebase(email: String , password: String,onSuccess: () -> Unit) {
-        FirebaseAuth.getInstance()
-            .createUserWithEmailAndPassword(email,password)
-            .addOnCompleteListener {
-                if(it.isSuccessful){
-                    onSuccess()
+    fun registerUser(
+        username: String,
+        email: String,
+        password: String,
+        name: String,
+        surname : String,
+        phoneNumber: String,
+        imageUri: Uri?,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val user = FirebaseAuth.getInstance().currentUser
+                    if (user != null) {
+                        val userId = user.uid
+                        val profileData = hashMapOf(
+                            "username" to username,
+                            "name" to name,
+                            "surname" to surname,
+                            "phoneNumber" to phoneNumber,
+                            "email" to email,
+                            "points" to 0
+                        )
+
+                        // Čuvanje podataka u Firestore
+                        FirebaseFirestore.getInstance().collection("users")
+                            .document(userId).set(profileData)
+                            .addOnSuccessListener {
+                                Log.d("SignUpViewModel", "User data stored in Firestore")
+                                // Upload slike ako postoji
+                                imageUri?.let { uri ->
+                                    val storageRef = FirebaseStorage.getInstance()
+                                        .reference.child("profile_photos/$userId.jpg")
+                                    storageRef.putFile(uri)
+                                        .addOnSuccessListener {
+                                            Log.d("SignUpViewModel", "Image uploaded successfully")
+                                            storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                                                FirebaseFirestore.getInstance().collection("users")
+                                                    .document(userId)
+                                                    .update("photoUrl", downloadUrl.toString())
+                                                    .addOnSuccessListener {
+                                                        Log.d("SignUpViewModel", "Image URL stored in Firestore")
+                                                        onResult(true, null)
+                                                    }
+                                            }
+                                        }
+                                        .addOnFailureListener { exception ->
+                                            Log.e("SignUpViewModel", "Image upload failed: ${exception.message}")
+                                            onResult(false, exception.message)
+                                        }
+                                } ?: run {
+                                    onResult(true, null)
+                                }
+                            }
+                            .addOnFailureListener { exception ->
+                                Log.e("SignUpViewModel", "Error storing user data in Firestore: ${exception.message}")
+                                onResult(false, exception.message)
+                            }
+                    } else {
+                        onResult(false, "User ID is null")
+                    }
+                } else {
+                    Log.e("SignUpViewModel", "Error creating user: ${task.exception?.message}")
+                    onResult(false, task.exception?.message)
                 }
             }
-            .addOnFailureListener{
-
-            }
-
     }
+
 
 }

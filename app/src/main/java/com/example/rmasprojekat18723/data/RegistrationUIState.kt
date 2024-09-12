@@ -1,5 +1,8 @@
 package com.example.rmasprojekat18723.data
 
+import android.net.Uri
+
+
 data class RegistrationUIState (
     var username : String = "",
     var name : String = "",
@@ -8,6 +11,7 @@ data class RegistrationUIState (
     var email : String = "",
     var password : String = "",
     var confirmPassword : String = "",
+    var profileImageUri: Uri? = null,
 
 
     var usernameError : String? = null,
@@ -18,4 +22,4 @@ data class RegistrationUIState (
     var passwordError : String? = null,
     var confirmPasswordError : String? = null,
 
-)
+    )

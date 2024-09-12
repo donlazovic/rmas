@@ -7,12 +7,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.example.rmasprojekat18723.Screens.HomeScreen
 import com.example.rmasprojekat18723.Screens.LoginScreen
+import com.example.rmasprojekat18723.Screens.MapScreen
 import com.example.rmasprojekat18723.Screens.SignUpScreen
 
 sealed class Route() {
     data class LoginScreen(val name: String = "Login") : Route()
     data class SignUpScreen(val name: String = "SignUp") : Route()
     data class HomeScreen(val name: String = "Home") : Route()
+    data class MapScreen(val name: String = "Map") : Route()
 
 }
 
@@ -52,7 +54,15 @@ fun MyNavigation(navHostController: NavHostController) {
                         inclusive = true
                     }
                 }
-            })
+            },
+                mapClick = {
+                    navHostController.navigate(Route.MapScreen().name) {
+                    }
+                })
+        }
+        composable(route = Route.MapScreen().name) {
+            MapScreen()
+
         }
     }
 }
