@@ -19,6 +19,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -34,15 +35,16 @@ import com.example.rmasprojekat18723.data.SignUpViewModel
 import com.example.rmasprojekat18723.services.LocationService
 import com.example.rmasprojekat18723.ui.theme.ButtonColor1
 import com.example.rmasprojekat18723.ui.theme.ButtonColor2
+import com.example.rmasprojekat18723.ui.theme.ButtonColor3
 
 const val REQUEST_CODE_NOTIFICATION_PERMISSION = 1001
 const val REQUEST_CODE_LOCATION_PERMISSION = 1002
 
 @SuppressLint("MissingPermission")
 @Composable
-fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit, signupViewModel: SignUpViewModel = viewModel()) {
+fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit,  addObjectClick: () -> Unit,signupViewModel: SignUpViewModel = viewModel()) {
     val context = LocalContext.current
-    var isServiceRunning by remember { mutableStateOf(false) }
+    var isServiceRunning by rememberSaveable { mutableStateOf(false) }
     var permissionsGranted by remember { mutableStateOf(false) }
 
     Surface(
@@ -94,6 +96,34 @@ fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit, signupViewModel: SignU
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    addObjectClick()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(48.dp),
+                colors = ButtonDefaults.buttonColors(Color.Transparent)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.horizontalGradient(listOf(ButtonColor1, ButtonColor2)),
+                            shape = RoundedCornerShape(50.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Add Object",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
@@ -112,7 +142,13 @@ fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit, signupViewModel: SignU
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            brush = Brush.horizontalGradient(listOf(ButtonColor1, ButtonColor2)),
+                            brush = Brush.horizontalGradient(
+                                if (isServiceRunning) {
+                                    listOf(Color.Red, ButtonColor3)
+                                } else {
+                                    listOf(ButtonColor1, ButtonColor2)
+                                }
+                            ),
                             shape = RoundedCornerShape(50.dp)
                         ),
                     contentAlignment = Alignment.Center
@@ -152,6 +188,7 @@ fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit, signupViewModel: SignU
             }
         }
     }
+
 }
 
 
@@ -162,22 +199,19 @@ fun checkNotificationPermissionAndStartService(
 ) {
     Log.d("ServiceCheck", "Checking permissions")
 
-    // Proveri za lokaciju
     val locationPermissionGranted = ActivityCompat.checkSelfPermission(
         context,
         Manifest.permission.ACCESS_FINE_LOCATION
     ) == PackageManager.PERMISSION_GRANTED
 
-    // Proveri za notifikacije (ako je verzija Android-a TIRAMISU ili novija)
     val notificationPermissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     } else {
-        true // Ako je stariji Android, nema potrebe za ovom dozvolom
+        true
     }
 
     if (!locationPermissionGranted || !notificationPermissionGranted) {
         Log.d("ServiceCheck", "Permissions missing: location = $locationPermissionGranted, notifications = $notificationPermissionGranted")
-        // Ako bilo koja dozvola nije odobrena, prikazujemo poruku korisniku
         if (!locationPermissionGranted) {
             Log.d("ServiceCheck", "Requesting location permission")
             requestLocationPermission(context as Activity)
@@ -187,11 +221,9 @@ fun checkNotificationPermissionAndStartService(
             requestNotificationPermission(context as Activity)
         }
 
-        // Ne pokrećemo servis dok se sve dozvole ne odobre
         onServiceStatusChanged(false)
     } else {
         Log.d("ServiceCheck", "All permissions granted. Starting service.")
-        // Ako su sve dozvole odobrene, pokrećemo ili zaustavljamo servis
         toggleLocationService(context, isServiceRunning, onServiceStatusChanged)
     }
 }
@@ -238,5 +270,5 @@ private fun stopLocationService(context: Context) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewHomeScreen() {
-    HomeScreen({},{})
+    HomeScreen({},{},{})
 }

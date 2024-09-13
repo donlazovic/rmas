@@ -8,9 +8,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
+import android.util.Log
 import android.widget.Toast
 import com.example.rmasprojekat18723.App.PawPalsApps
 import com.example.rmasprojekat18723.ui.theme.RMASProjekat18723Theme
+import com.google.firebase.messaging.FirebaseMessaging
 
 class MainActivity : ComponentActivity() {
 
@@ -22,7 +24,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        requestPermissionsAtStart()
+        if (savedInstanceState == null) {
+            requestPermissionsAtStart()
+        }
+
         setContent {
             RMASProjekat18723Theme {
                 PawPalsApps()
@@ -63,4 +68,5 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 }

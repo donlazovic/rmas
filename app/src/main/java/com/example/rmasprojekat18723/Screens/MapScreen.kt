@@ -29,7 +29,7 @@ import com.google.android.gms.maps.model.MarkerOptions
 
 
 @Composable
-fun MapScreen(mapViewModel: MapViewModel = viewModel()) {
+fun MapScreen(mapViewModel: MapViewModel = viewModel(), onSuccess: () -> Unit) {
     val context = LocalContext.current
     val hasLocationPermission = ContextCompat.checkSelfPermission(
         context, Manifest.permission.ACCESS_FINE_LOCATION

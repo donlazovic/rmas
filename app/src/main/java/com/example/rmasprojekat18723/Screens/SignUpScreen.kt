@@ -83,7 +83,6 @@ fun SignUpScreen(onSignupSuccess: () -> Unit , signUpViewModel: SignUpViewModel 
 
     val context = LocalContext.current
 
-    // Launcher za biranje slike iz galerije
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
@@ -92,13 +91,11 @@ fun SignUpScreen(onSignupSuccess: () -> Unit , signUpViewModel: SignUpViewModel 
         }
     )
 
-    // Launcher za slikanje kamerom
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = TakePicturePreview(),
         onResult = { bitmap: Bitmap? ->
             capturedImageBitmap = bitmap
             bitmap?.let {
-                // Slika sa kamere biće sačuvana kao bitmap u state
                 val uri = saveBitmapToFile(context, it)
                 uri?.let { imageUri ->
                     selectedImageUri = imageUri

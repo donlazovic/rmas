@@ -9,12 +9,14 @@ import com.example.rmasprojekat18723.Screens.HomeScreen
 import com.example.rmasprojekat18723.Screens.LoginScreen
 import com.example.rmasprojekat18723.Screens.MapScreen
 import com.example.rmasprojekat18723.Screens.SignUpScreen
+import com.example.rmasprojekat18723.screens.AddObjectScreen
 
 sealed class Route() {
     data class LoginScreen(val name: String = "Login") : Route()
     data class SignUpScreen(val name: String = "SignUp") : Route()
     data class HomeScreen(val name: String = "Home") : Route()
     data class MapScreen(val name: String = "Map") : Route()
+    data class AddObjectScreen(val name: String = "AddObject") : Route()
 
 }
 
@@ -58,11 +60,22 @@ fun MyNavigation(navHostController: NavHostController) {
                 mapClick = {
                     navHostController.navigate(Route.MapScreen().name) {
                     }
+                },
+                addObjectClick = {
+                    navHostController.navigate(Route.AddObjectScreen().name)
                 })
         }
         composable(route = Route.MapScreen().name) {
-            MapScreen()
+            MapScreen(onSuccess = {
+                navHostController.popBackStack()
 
+            })
+        }
+
+        composable(route = Route.AddObjectScreen().name) {
+            AddObjectScreen(onSuccess = {
+                navHostController.popBackStack()
+            })
         }
     }
 }

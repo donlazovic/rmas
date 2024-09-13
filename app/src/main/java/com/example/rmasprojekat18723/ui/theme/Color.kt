@@ -23,3 +23,5 @@ val Secondary = Color(0xFF030335)
 val ButtonColor1 = Color(0xFFf2ebeb)
 
 val ButtonColor2 = Color(0xFF0ee627)
+
+val ButtonColor3 = Color(0xFF5e0d0d)

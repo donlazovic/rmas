@@ -12,17 +12,22 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.example.rmasprojekat18723.MainActivity
 import com.example.rmasprojekat18723.R
 import com.google.android.gms.location.*
-import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.firestore.FirebaseFirestore
 
 class LocationService : Service() {
 
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
+    private val db = FirebaseFirestore.getInstance()
+
+    private var lastNotifiedUserId: String? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -31,18 +36,12 @@ class LocationService : Service() {
             override fun onLocationResult(locationResult: LocationResult) {
                 super.onLocationResult(locationResult)
                 for (location in locationResult.locations) {
-                    sendLocationToServer(location)
+                    checkNearbyObjects(location)
                 }
             }
         }
-        // Subscribe to notifications about nearby objects
-        subscribeToNearbyObjectNotifications()
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForegroundService()
         startLocationUpdates()
-        return START_STICKY
     }
 
     private fun startForegroundService() {
@@ -57,7 +56,7 @@ class LocationService : Service() {
 
         val notification: Notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Tracking Location")
-            .setContentText("Your location is being tracked, and you'll receive notifications about nearby objects.")
+            .setContentText("Your location is being tracked, and you'll receive notifications about nearby users.")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
             .build()
@@ -77,31 +76,76 @@ class LocationService : Service() {
     private fun startLocationUpdates() {
         val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000).build()
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null)
         }
     }
 
-    private fun sendLocationToServer(location: Location) {
-        // Ovde implementiraj slanje lokacije na server
-    }
+    private fun checkNearbyObjects(location: Location) {
+        db.collection("objects").get()
+            .addOnSuccessListener { result ->
+                for (document in result) {
+                    val lat = document.getDouble("latitude")
+                    val lon = document.getDouble("longitude")
+                    val objectId = document.id
+                    val objectName = document.getString("name") // Assuming you have a name field
 
-    private fun subscribeToNearbyObjectNotifications() {
-        FirebaseMessaging.getInstance().subscribeToTopic("nearby_objects")
-            .addOnCompleteListener { task ->
-                if (!task.isSuccessful) {
-                    // Greška prilikom pretplate
+                    if (lat != null && lon != null && objectId != lastNotifiedUserId) {
+                        val objectLocation = Location("").apply {
+                            latitude = lat
+                            longitude = lon
+                        }
+
+                        val distance = location.distanceTo(objectLocation)
+                        if (distance < 100) { // If object is within 100 meters
+                            sendNotification(objectId, "Nearby Object", "Object $objectName is near your location.")
+                            lastNotifiedUserId = objectId
+                        }
+                    }
                 }
             }
+    }
+    private fun sendNotification(userId: String, title: String, content: String) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+        val notification = NotificationCompat.Builder(this, "location_service")
+            .setContentTitle(title)
+            .setContentText(content)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(userId.hashCode(), notification)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         fusedLocationProviderClient.removeLocationUpdates(locationCallback)
-        FirebaseMessaging.getInstance().unsubscribeFromTopic("nearby_objects")
     }
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
+    }
+
+    private fun updateUserLocationInFirestore(location: Location) {
+        val userId = "your_user_id" // zameni sa stvarnim userId
+        val userLocation = mapOf(
+            "latitude" to location.latitude,
+            "longitude" to location.longitude
+        )
+
+        db.collection("users").document(userId)
+            .set(userLocation)
+            .addOnSuccessListener {
+                Log.d("LocationService", "User location updated in Firestore.")
+            }
+            .addOnFailureListener { e ->
+                Log.w("LocationService", "Error updating location", e)
+            }
     }
 }
