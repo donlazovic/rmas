@@ -65,7 +65,6 @@ import com.example.rmasprojekat18723.ui.theme.Secondary
 import android.graphics.Bitmap
 import android.os.Environment
 import androidx.activity.result.contract.ActivityResultContracts.TakePicturePreview
-import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import java.io.File
 import java.io.FileOutputStream

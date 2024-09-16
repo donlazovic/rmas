@@ -1,6 +1,5 @@
 package com.example.rmasprojekat18723.services
 
-import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -13,9 +12,7 @@ import android.location.Location
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
 import com.example.rmasprojekat18723.MainActivity
 import com.example.rmasprojekat18723.R
 import com.google.android.gms.location.*
@@ -88,7 +85,7 @@ class LocationService : Service() {
                     val lat = document.getDouble("latitude")
                     val lon = document.getDouble("longitude")
                     val objectId = document.id
-                    val objectName = document.getString("name") // Assuming you have a name field
+                    val objectTitle = document.getString("title")
 
                     if (lat != null && lon != null && objectId != lastNotifiedUserId) {
                         val objectLocation = Location("").apply {
@@ -97,14 +94,15 @@ class LocationService : Service() {
                         }
 
                         val distance = location.distanceTo(objectLocation)
-                        if (distance < 100) { // If object is within 100 meters
-                            sendNotification(objectId, "Nearby Object", "Object $objectName is near your location.")
+                        if (distance < 100) {
+                            sendNotification(objectId, "Nearby Object", "$objectTitle is near your location.")
                             lastNotifiedUserId = objectId
                         }
                     }
                 }
             }
     }
+
     private fun sendNotification(userId: String, title: String, content: String) {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import com.google.android.gms.maps.model.LatLng
 
 class ObjectViewModel : ViewModel() {
 
@@ -29,15 +30,19 @@ class ObjectViewModel : ViewModel() {
                 objectUIState.value = objectUIState.value.copy(photoUri = event.photoUri)
             }
             is ObjectUIEvent.AddObjectClicked -> {
-                addObject(event.onSuccess)
+                addObject(event.onSuccess, event.currentLocation)
             }
+            is ObjectUIEvent.LoadAllObjects -> {
+                loadAllObjects()
+            }
+
         }
     }
 
-    private fun addObject(onSuccess: () -> Unit) {
+    private fun addObject(onSuccess: () -> Unit, currentLocation: LatLng?) {
         val pass = validateDataWithRules()
 
-        if (pass) {
+        if (pass && currentLocation != null) {
             val firestore = FirebaseFirestore.getInstance()
             val storage = FirebaseStorage.getInstance()
 
@@ -46,6 +51,8 @@ class ObjectViewModel : ViewModel() {
                 "description" to objectUIState.value.description,
                 "duration" to objectUIState.value.duration,
                 "startTime" to objectUIState.value.startTime,
+                "latitude" to currentLocation.latitude,
+                "longitude" to currentLocation.longitude,
                 "timestamp" to System.currentTimeMillis()
             )
 
@@ -60,14 +67,14 @@ class ObjectViewModel : ViewModel() {
                                     firestore.collection("objects").document(objectId)
                                         .update("photoUrl", downloadUrl.toString())
                                         .addOnSuccessListener {
-                                            onSuccess()
+                                            onSuccess()  // Uspešno dodavanje objekta - osveži markere
                                         }
                                 }
                             }
                             .addOnFailureListener { exception ->
                                 Log.e("ObjectViewModel", "Photo upload failed: ${exception.message}")
                             }
-                    } ?: onSuccess()
+                    } ?: onSuccess()  // Uspešno dodavanje objekta - osveži markere
                 }
                 .addOnFailureListener { exception ->
                     Log.e("ObjectViewModel", "Failed to add object: ${exception.message}")
@@ -87,5 +94,26 @@ class ObjectViewModel : ViewModel() {
         )
 
         return title == null && description == null && duration == null
+    }
+
+    fun loadAllObjects() {
+        val firestore = FirebaseFirestore.getInstance()
+
+        firestore.collection("objects").get()
+            .addOnSuccessListener { result ->
+                val objects = result.documents.map { document ->
+                    ObjectUIState(
+                        title = document.getString("title") ?: "",
+                        description = document.getString("description") ?: "",
+                        duration = document.getString("duration") ?: "",
+                        startTime = document.getString("startTime") ?: "",
+                        photoUri = Uri.parse(document.getString("photoUrl") ?: "")
+                    )
+                }
+                objectUIState.value = objectUIState.value.copy(objects = objects)
+            }
+            .addOnFailureListener { exception ->
+                Log.e("ObjectViewModel", "Error loading objects: ${exception.message}")
+            }
     }
 }

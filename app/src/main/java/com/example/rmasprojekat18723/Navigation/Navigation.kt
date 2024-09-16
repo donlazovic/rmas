@@ -9,14 +9,14 @@ import com.example.rmasprojekat18723.Screens.HomeScreen
 import com.example.rmasprojekat18723.Screens.LoginScreen
 import com.example.rmasprojekat18723.Screens.MapScreen
 import com.example.rmasprojekat18723.Screens.SignUpScreen
-import com.example.rmasprojekat18723.screens.AddObjectScreen
+import com.example.rmasprojekat18723.Screens.ObjectTableScreen
 
 sealed class Route() {
     data class LoginScreen(val name: String = "Login") : Route()
     data class SignUpScreen(val name: String = "SignUp") : Route()
     data class HomeScreen(val name: String = "Home") : Route()
     data class MapScreen(val name: String = "Map") : Route()
-    data class AddObjectScreen(val name: String = "AddObject") : Route()
+    data class ObjectTableScreen(val name: String = "Object") : Route()
 
 }
 
@@ -26,9 +26,9 @@ fun MyNavigation(navHostController: NavHostController) {
         navigation(startDestination = Route.LoginScreen().name, route = "login_flow") {
             composable(route = Route.LoginScreen().name) {
                 LoginScreen(
-                    onLoginSuccess =  {
+                    onLoginSuccess = {
                         navHostController.navigate(Route.HomeScreen().name) {
-                            popUpTo(Route.LoginScreen().name){
+                            popUpTo(Route.LoginScreen().name) {
                                 inclusive = true
                             }
                         }
@@ -45,38 +45,35 @@ fun MyNavigation(navHostController: NavHostController) {
                             inclusive = true
                         }
                     }
-                }
-                )
+                })
             }
         }
         composable(route = Route.HomeScreen().name) {
-            HomeScreen(signOut = {
-                navHostController.navigate(Route.LoginScreen().name) {
-                    popUpTo(Route.HomeScreen().name) {
-                        inclusive = true
-                    }
-                }
-            },
-                mapClick = {
-                    navHostController.navigate(Route.MapScreen().name) {
+            HomeScreen(
+                signOut = {
+                    navHostController.navigate(Route.LoginScreen().name) {
+                        popUpTo(Route.HomeScreen().name) {
+                            inclusive = true
+                        }
                     }
                 },
-                addObjectClick = {
-                    navHostController.navigate(Route.AddObjectScreen().name)
-                })
+                mapClick = {
+                    navHostController.navigate(Route.MapScreen().name)
+                },
+                showAllObjects = {
+                    navHostController.navigate(Route.ObjectTableScreen().name)
+                },
+            )
         }
         composable(route = Route.MapScreen().name) {
             MapScreen(onSuccess = {
                 navHostController.popBackStack()
-
             })
         }
-
-        composable(route = Route.AddObjectScreen().name) {
-            AddObjectScreen(onSuccess = {
+        composable(route = Route.ObjectTableScreen().name) {
+            ObjectTableScreen(goBackToHomeScreen = {
                 navHostController.popBackStack()
             })
         }
     }
 }
-

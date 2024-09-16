@@ -8,6 +8,7 @@ data class ObjectUIState(
     var duration: String = "",
     var startTime: String = "",
     var photoUri: Uri? = null,
+    var objects: List<ObjectUIState> = emptyList(),
 
     var titleError: String? = null,
     var descriptionError: String? = null,

@@ -168,12 +168,10 @@ class SignUpViewModel : ViewModel() {
                             "points" to 0
                         )
 
-                        // Čuvanje podataka u Firestore
                         FirebaseFirestore.getInstance().collection("users")
                             .document(userId).set(profileData)
                             .addOnSuccessListener {
                                 Log.d("SignUpViewModel", "User data stored in Firestore")
-                                // Upload slike ako postoji
                                 imageUri?.let { uri ->
                                     val storageRef = FirebaseStorage.getInstance()
                                         .reference.child("profile_photos/$userId.jpg")

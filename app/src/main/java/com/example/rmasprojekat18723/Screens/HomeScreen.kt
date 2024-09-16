@@ -42,10 +42,9 @@ const val REQUEST_CODE_LOCATION_PERMISSION = 1002
 
 @SuppressLint("MissingPermission")
 @Composable
-fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit,  addObjectClick: () -> Unit,signupViewModel: SignUpViewModel = viewModel()) {
+fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit, showAllObjects: () -> Unit, signupViewModel: SignUpViewModel = viewModel()) {
     val context = LocalContext.current
     var isServiceRunning by rememberSaveable { mutableStateOf(false) }
-    var permissionsGranted by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier
@@ -100,7 +99,7 @@ fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit,  addObjectClick: () ->
 
             Button(
                 onClick = {
-                    addObjectClick()
+                    showAllObjects()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -117,7 +116,7 @@ fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit,  addObjectClick: () ->
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Add Object",
+                        text = "Show All Objects",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                     )
