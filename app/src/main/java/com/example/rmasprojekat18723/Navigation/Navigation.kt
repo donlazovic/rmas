@@ -10,6 +10,7 @@ import com.example.rmasprojekat18723.Screens.LoginScreen
 import com.example.rmasprojekat18723.Screens.MapScreen
 import com.example.rmasprojekat18723.Screens.SignUpScreen
 import com.example.rmasprojekat18723.Screens.ObjectTableScreen
+import com.example.rmasprojekat18723.Screens.UserLeaderboardScreen
 
 sealed class Route() {
     data class LoginScreen(val name: String = "Login") : Route()
@@ -17,6 +18,7 @@ sealed class Route() {
     data class HomeScreen(val name: String = "Home") : Route()
     data class MapScreen(val name: String = "Map") : Route()
     data class ObjectTableScreen(val name: String = "Object") : Route()
+    data class UserLeaderboardScreen(val name: String = "UserLeaderboard") : Route()
 
 }
 
@@ -63,6 +65,9 @@ fun MyNavigation(navHostController: NavHostController) {
                 showAllObjects = {
                     navHostController.navigate(Route.ObjectTableScreen().name)
                 },
+                userLeaderboard = {
+                    navHostController.navigate(Route.UserLeaderboardScreen().name)
+                },
             )
         }
         composable(route = Route.MapScreen().name) {
@@ -72,6 +77,11 @@ fun MyNavigation(navHostController: NavHostController) {
         }
         composable(route = Route.ObjectTableScreen().name) {
             ObjectTableScreen(goBackToHomeScreen = {
+                navHostController.popBackStack()
+            })
+        }
+        composable(route = Route.UserLeaderboardScreen().name) {
+            UserLeaderboardScreen(onBack = {
                 navHostController.popBackStack()
             })
         }

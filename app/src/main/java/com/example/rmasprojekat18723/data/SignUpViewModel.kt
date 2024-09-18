@@ -14,6 +14,8 @@ class SignUpViewModel : ViewModel() {
 
     var registrationUIState = mutableStateOf(RegistrationUIState())
 
+    var usersState = mutableStateOf<List<RegistrationUIState>>(emptyList())
+
 
     fun onEvent(event: SignUpUIEvent) {
         when (event) {
@@ -70,6 +72,9 @@ class SignUpViewModel : ViewModel() {
                 registrationUIState.value = registrationUIState.value.copy(
                     profileImageUri = event.imageUri
                 )
+            }
+            is SignUpUIEvent.LoadUsers -> {
+                loadAllUsers()
             }
 
 
@@ -143,7 +148,7 @@ class SignUpViewModel : ViewModel() {
 
     }
 
-    fun registerUser(
+    private fun registerUser(
         username: String,
         email: String,
         password: String,
@@ -207,6 +212,29 @@ class SignUpViewModel : ViewModel() {
                     Log.e("SignUpViewModel", "Error creating user: ${task.exception?.message}")
                     onResult(false, task.exception?.message)
                 }
+            }
+    }
+
+    private fun loadAllUsers() {
+        val firestore = FirebaseFirestore.getInstance()
+        firestore.collection("users").get()
+            .addOnSuccessListener { result ->
+                val users = result.documents.map { document ->
+                    RegistrationUIState(
+                        userId = document.id,
+                        username = document.getString("username") ?: "",
+                        name = document.getString("name") ?: "",
+                        surname = document.getString("surname") ?: "",
+                        phoneNumber = document.getString("phoneNumber") ?: "",
+                        email = document.getString("email") ?: "",
+                        points = document.getLong("points")?.toInt() ?: 0,
+                        profileImageUri = document.getString("photoUrl")?.let { Uri.parse(it) }
+                    )
+                }
+                usersState.value = users.sortedByDescending { it.points }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("SignUpViewModel", "Error loading users: ${exception.message}")
             }
     }
 

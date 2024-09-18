@@ -42,7 +42,7 @@ const val REQUEST_CODE_LOCATION_PERMISSION = 1002
 
 @SuppressLint("MissingPermission")
 @Composable
-fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit, showAllObjects: () -> Unit, signupViewModel: SignUpViewModel = viewModel()) {
+fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit, showAllObjects: () -> Unit, userLeaderboard: () -> Unit, signupViewModel: SignUpViewModel = viewModel()) {
     val context = LocalContext.current
     var isServiceRunning by rememberSaveable { mutableStateOf(false) }
 
@@ -117,6 +117,34 @@ fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit, showAllObjects: () -> 
                 ) {
                     Text(
                         text = "Show All Objects",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    userLeaderboard()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(48.dp),
+                colors = ButtonDefaults.buttonColors(Color.Transparent)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.horizontalGradient(listOf(ButtonColor1, ButtonColor2)),
+                            shape = RoundedCornerShape(50.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "User Leaderboard",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                     )
@@ -269,5 +297,5 @@ private fun stopLocationService(context: Context) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewHomeScreen() {
-    HomeScreen({},{},{})
+    HomeScreen({},{},{},{})
 }

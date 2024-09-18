@@ -4,10 +4,12 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
+import android.widget.RatingBar
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
@@ -17,12 +19,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -47,14 +53,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import com.example.rmasprojekat18723.data.ObjectUIEvent
+import com.example.rmasprojekat18723.data.ObjectUIState
 import com.example.rmasprojekat18723.data.ObjectViewModel
 import com.google.android.gms.maps.GoogleMap
+import com.google.firebase.auth.FirebaseAuth
 
 
 @Composable
-fun MapScreen(mapViewModel: MapViewModel = viewModel(), onSuccess: () -> Unit) {
+fun MapScreen(mapViewModel: MapViewModel = viewModel(),objectViewModel: ObjectViewModel = viewModel(), onSuccess: () -> Unit) {
     val context = LocalContext.current
     val hasLocationPermission = ContextCompat.checkSelfPermission(
         context, Manifest.permission.ACCESS_FINE_LOCATION
@@ -63,6 +72,8 @@ fun MapScreen(mapViewModel: MapViewModel = viewModel(), onSuccess: () -> Unit) {
     val mapState = mapViewModel.mapUIState.value
     var isCameraMovedManually by remember { mutableStateOf(false) }
     var showAddObjectDialog by remember { mutableStateOf(false) }
+    var selectedObject by remember { mutableStateOf<ObjectUIState?>(null) }
+
 
     LaunchedEffect(Unit) {
         mapViewModel.onEvent(MapUIEvent.LoadMarkers)
@@ -103,6 +114,17 @@ fun MapScreen(mapViewModel: MapViewModel = viewModel(), onSuccess: () -> Unit) {
                                 }
                             }
 
+                            googleMap.setOnMarkerClickListener { marker ->
+                                val clickedObject = mapState.objects.find { obj ->
+                                    obj.latitude == marker.position.latitude && obj.longitude == marker.position.longitude
+                                }
+                                if (clickedObject != null) {
+                                    selectedObject = clickedObject
+                                }
+                                false
+                            }
+
+
                             if (mapState.mapMarkers.isNotEmpty()) {
                                 mapState.mapMarkers.forEach { markerLocation ->
                                     googleMap.addMarker(
@@ -137,6 +159,15 @@ fun MapScreen(mapViewModel: MapViewModel = viewModel(), onSuccess: () -> Unit) {
             )
         }
 
+        selectedObject?.let { obj ->
+            ObjectDetailDialog(
+                obj = obj,
+                objectViewModel = objectViewModel,
+                mapViewModel = mapViewModel,
+                onDismiss = { selectedObject = null }
+            )
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -150,6 +181,7 @@ fun MapScreen(mapViewModel: MapViewModel = viewModel(), onSuccess: () -> Unit) {
                 Text(text = "Add Object")
             }
         }
+
 
         if (showAddObjectDialog) {
             AddObjectDialog(
@@ -165,6 +197,98 @@ fun MapScreen(mapViewModel: MapViewModel = viewModel(), onSuccess: () -> Unit) {
     }
 
 
+}
+
+@Composable
+fun ObjectDetailDialog(
+    obj: ObjectUIState,
+    objectViewModel: ObjectViewModel,
+    mapViewModel: MapViewModel,
+    onDismiss: () -> Unit
+) {
+    var userRating by remember { mutableStateOf(5) }
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val isOwner = obj.postedByUserId == currentUser?.uid
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = obj.title,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = obj.photoUri),
+                    contentDescription = "Object Image",
+                    modifier = Modifier
+                        .size(200.dp)
+                        .padding(vertical = 16.dp)
+                )
+                Text(text = "Description: ${obj.description}")
+                Text(text = "Duration: ${obj.duration}")
+                Text(text = "Start Time: ${obj.startTime}")
+                Text(text = "Average Grade: ${obj.avgGrade}")
+                Text(text = "Posted by: ${obj.postedByUsername}")
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (!isOwner) {
+                    Text(text = "Rate this object:", modifier = Modifier.padding(vertical = 8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AndroidView(factory = { context ->
+                            RatingBar(context).apply {
+                                numStars = 10
+                                stepSize = 1f
+                                rating = userRating.toFloat()
+                                setIsIndicator(false)
+                                scaleX = 0.8f
+                                scaleY = 0.8f
+                                setOnRatingBarChangeListener { _, rating, _ ->
+                                    userRating = rating.toInt()
+                                }
+                            }
+                        })
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                } else {
+                    Text(text = "You cannot rate your own object.", color = Color.Red, fontWeight = FontWeight.Bold)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    objectViewModel.onEvent(ObjectUIEvent.RateObject(obj.objectId, userRating) {
+                        mapViewModel.onEvent(MapUIEvent.LoadMarkers)
+                        onDismiss()
+                    })
+                }
+            ) {
+                Text(text = "Submit Rating")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text(text = "Cancel")
+            }
+        }
+    )
 }
 
 

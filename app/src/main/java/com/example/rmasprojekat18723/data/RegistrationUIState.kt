@@ -4,6 +4,7 @@ import android.net.Uri
 
 
 data class RegistrationUIState (
+    var userId: String = "",
     var username : String = "",
     var name : String = "",
     var surname : String = "",
@@ -12,6 +13,7 @@ data class RegistrationUIState (
     var password : String = "",
     var confirmPassword : String = "",
     var profileImageUri: Uri? = null,
+    var points: Int = 0,
 
 
     var usernameError : String? = null,

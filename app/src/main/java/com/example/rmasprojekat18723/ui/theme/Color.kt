@@ -25,3 +25,9 @@ val ButtonColor1 = Color(0xFFf2ebeb)
 val ButtonColor2 = Color(0xFF0ee627)
 
 val ButtonColor3 = Color(0xFF5e0d0d)
+
+val GoldColor = Color(0xFFFFD700)
+
+val SilverColor = Color(0xFFC0C0C0)
+
+val BronzeColor = Color(0xFFCD7F32)

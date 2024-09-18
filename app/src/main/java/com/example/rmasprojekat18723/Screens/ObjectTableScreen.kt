@@ -58,14 +58,18 @@ fun ObjectTableScreen( goBackToHomeScreen: () -> Unit, viewModel: ObjectViewMode
                     .align(Alignment.CenterHorizontally)
             )
 
+            val sortedObjects = objectState.objects.sortedByDescending { it.avgGrade }
+
             LazyColumn(
                 modifier = Modifier.fillMaxWidth()
                     .weight(1f)
             ) {
-                items(objectState.objects.size) { index ->
-                    ObjectCard(objectState.objects[index])
+                items(sortedObjects.size) { index ->
+                    ObjectCard(sortedObjects[index])
                 }
             }
+
+
             Button(
                 onClick = {
                     goBackToHomeScreen()
@@ -125,7 +129,13 @@ fun ObjectCard(obj: ObjectUIState) {
             )
             Text(
                 text = "Start Time: ${obj.startTime}",
-                fontSize = 14.sp
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            Text(
+                text = "Average Grade: ${obj.avgGrade}",
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 4.dp)
             )
         }
     }

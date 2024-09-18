@@ -18,6 +18,8 @@ sealed class SignUpUIEvent {
 
     data class ImageSelected(val imageUri: Uri?) : SignUpUIEvent()
 
+    object LoadUsers : SignUpUIEvent()
+
 
 }
 

@@ -11,6 +11,7 @@ sealed class ObjectUIEvent {
     data class PhotoSelected(val photoUri: Uri?) : ObjectUIEvent()
 
     data class AddObjectClicked(val onSuccess: () -> Unit, val currentLocation: LatLng?) : ObjectUIEvent()
+    data class RateObject(val objectId: String, val rating: Int, val onSuccess: () -> Unit) : ObjectUIEvent()
     object LoadAllObjects : ObjectUIEvent()
 
 }
