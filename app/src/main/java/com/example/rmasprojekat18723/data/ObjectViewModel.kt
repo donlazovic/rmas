@@ -31,7 +31,7 @@ class ObjectViewModel : ViewModel() {
                 objectUIState.value = objectUIState.value.copy(photoUri = event.photoUri)
             }
             is ObjectUIEvent.AddObjectClicked -> {
-                addObject(event.onSuccess, event.currentLocation)
+                addObject(event.onSuccess, event.currentLocation, event.timestamp)
             }
             is ObjectUIEvent.LoadAllObjects -> {
                 loadAllObjects()
@@ -42,7 +42,7 @@ class ObjectViewModel : ViewModel() {
         }
     }
 
-    private fun addObject(onSuccess: () -> Unit, currentLocation: LatLng?) {
+    private fun addObject(onSuccess: () -> Unit, currentLocation: LatLng?, timestamp: Long) {
         val pass = validateDataWithRules()
 
         if (pass && currentLocation != null) {
@@ -60,7 +60,7 @@ class ObjectViewModel : ViewModel() {
                         "title" to objectUIState.value.title,
                         "description" to objectUIState.value.description,
                         "duration" to objectUIState.value.duration,
-                        "startTime" to objectUIState.value.startTime,
+                        "startTime" to timestamp,
                         "latitude" to currentLocation.latitude,
                         "longitude" to currentLocation.longitude,
                         "timestamp" to System.currentTimeMillis(),
@@ -258,8 +258,8 @@ class ObjectViewModel : ViewModel() {
                         objectId = document.id,
                         title = document.getString("title") ?: "",
                         description = document.getString("description") ?: "",
-                        duration = document.getString("duration") ?: "",
-                        startTime = document.getString("startTime") ?: "",
+                        duration = document.getDouble("duration")?.toFloat() ?: 0f,
+                        startTime = document.getLong("startTime") ?: 0L,
                         photoUri = Uri.parse(document.getString("photoUrl") ?: ""),
                         avgGrade = document.getDouble("avgGrade")?.toFloat() ?: 0f,
                         userRatings = mutableMapOf(),
@@ -288,7 +288,7 @@ class ObjectViewModel : ViewModel() {
     private fun validateDataWithRules(): Boolean {
         val title = if (objectUIState.value.title.isEmpty()) "Title is required" else null
         val description = if (objectUIState.value.description.isEmpty()) "Description is required" else null
-        val duration = if (objectUIState.value.duration.isEmpty()) "Duration is required" else null
+        val duration = if (objectUIState.value.duration <= 0f) "Duration must be greater than 0" else null
 
         objectUIState.value = objectUIState.value.copy(
             titleError = title,

@@ -1,6 +1,8 @@
 package com.example.rmasprojekat18723.Screens
 
 import android.Manifest
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
@@ -9,7 +11,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
@@ -27,8 +28,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -55,11 +56,16 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
+import com.example.rmasprojekat18723.Components.DatePickerField
+import com.example.rmasprojekat18723.Components.formatDuration
+import com.example.rmasprojekat18723.Components.formatTimestamp
+import com.example.rmasprojekat18723.data.Filters
 import com.example.rmasprojekat18723.data.ObjectUIEvent
 import com.example.rmasprojekat18723.data.ObjectUIState
 import com.example.rmasprojekat18723.data.ObjectViewModel
 import com.google.android.gms.maps.GoogleMap
 import com.google.firebase.auth.FirebaseAuth
+import java.util.Calendar
 
 
 @Composable
@@ -72,6 +78,7 @@ fun MapScreen(mapViewModel: MapViewModel = viewModel(),objectViewModel: ObjectVi
     val mapState = mapViewModel.mapUIState.value
     var isCameraMovedManually by remember { mutableStateOf(false) }
     var showAddObjectDialog by remember { mutableStateOf(false) }
+    var showFilterDialog by remember { mutableStateOf(false) }
     var selectedObject by remember { mutableStateOf<ObjectUIState?>(null) }
 
 
@@ -100,6 +107,8 @@ fun MapScreen(mapViewModel: MapViewModel = viewModel(),objectViewModel: ObjectVi
                         map.getMapAsync { googleMap ->
                             googleMap.isMyLocationEnabled = true
 
+                            googleMap.clear()
+
                             googleMap.setOnMyLocationChangeListener { location ->
                                 val latLng = LatLng(location.latitude, location.longitude)
                                 mapViewModel.onEvent(MapUIEvent.LocationUpdate(latLng))
@@ -126,7 +135,9 @@ fun MapScreen(mapViewModel: MapViewModel = viewModel(),objectViewModel: ObjectVi
 
 
                             if (mapState.mapMarkers.isNotEmpty()) {
+                                googleMap.clear()
                                 mapState.mapMarkers.forEach { markerLocation ->
+                                    Log.d("MapScreen", "Marker location: ${markerLocation.latitude}, ${markerLocation.longitude}")
                                     googleMap.addMarker(
                                         MarkerOptions()
                                             .position(markerLocation)
@@ -172,6 +183,16 @@ fun MapScreen(mapViewModel: MapViewModel = viewModel(),objectViewModel: ObjectVi
             modifier = Modifier
                 .fillMaxSize()
         ) {
+
+            Button(
+                onClick = { showFilterDialog = true },
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+            ) {
+                Text(text = "Filter")
+            }
+
             Button(
                 onClick = { showAddObjectDialog = true },
                 modifier = Modifier
@@ -181,7 +202,6 @@ fun MapScreen(mapViewModel: MapViewModel = viewModel(),objectViewModel: ObjectVi
                 Text(text = "Add Object")
             }
         }
-
 
         if (showAddObjectDialog) {
             AddObjectDialog(
@@ -194,10 +214,191 @@ fun MapScreen(mapViewModel: MapViewModel = viewModel(),objectViewModel: ObjectVi
                 }
             )
         }
+        if (showFilterDialog) {
+            FilterDialog(
+                onDismiss = { showFilterDialog = false },
+                onApply = { filters ->
+                    mapViewModel.onEvent(MapUIEvent.ApplyFilters(filters))
+                    showFilterDialog = false
+                }
+            )
+        }
+
+
     }
 
 
 }
+
+
+@Composable
+fun FilterDialog(
+    onDismiss: () -> Unit,
+    onApply: (Filters) -> Unit
+) {
+    var author by remember { mutableStateOf("") }
+    var ratingFrom by remember { mutableStateOf("") }
+    var ratingTo by remember { mutableStateOf("") }
+    var startDate by remember { mutableStateOf<Long?>(null) }
+    var endDate by remember { mutableStateOf<Long?>(null) }
+    var durationFrom by remember { mutableStateOf("") }
+    var durationTo by remember { mutableStateOf("") }
+    var radius by remember { mutableStateOf("") }
+
+    val calendar = Calendar.getInstance()
+
+    val context = LocalContext.current
+
+    val startDatePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            calendar.set(Calendar.YEAR, year)
+            calendar.set(Calendar.MONTH, month)
+            calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+            TimePickerDialog(
+                context,
+                { _, hourOfDay, minute ->
+                    calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                    calendar.set(Calendar.MINUTE, minute)
+                    startDate = calendar.timeInMillis
+                },
+                calendar.get(Calendar.HOUR_OF_DAY),
+                calendar.get(Calendar.MINUTE),
+                true
+            ).show()
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    val endDatePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            calendar.set(Calendar.YEAR, year)
+            calendar.set(Calendar.MONTH, month)
+            calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+            TimePickerDialog(
+                context,
+                { _, hourOfDay, minute ->
+                    calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                    calendar.set(Calendar.MINUTE, minute)
+                    endDate = calendar.timeInMillis
+                },
+                calendar.get(Calendar.HOUR_OF_DAY),
+                calendar.get(Calendar.MINUTE),
+                true
+            ).show()
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Filter Options") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                TextField(
+                    value = author,
+                    onValueChange = { author = it },
+                    label = { Text("Username") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TextField(
+                    value = radius,
+                    onValueChange = { radius = it },
+                    label = { Text("Radius (meters)") },
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row {
+                    TextField(
+                        value = ratingFrom,
+                        onValueChange = { ratingFrom = it },
+                        label = { Text("Rating From") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextField(
+                        value = ratingTo,
+                        onValueChange = { ratingTo = it },
+                        label = { Text("Rating To") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(onClick = { startDatePickerDialog.show() }) {
+                    Text(text = "Pick Start Date & Time")
+                }
+                if (startDate != null) {
+                    Text(
+                        text = "Start Date & Time: ${Calendar.getInstance().apply { timeInMillis = startDate!! }.time}",
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(onClick = { endDatePickerDialog.show() }) {
+                    Text(text = "Pick End Date & Time")
+                }
+                if (endDate != null) {
+                    Text(
+                        text = "End Date & Time: ${Calendar.getInstance().apply { timeInMillis = endDate!! }.time}",
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row {
+                    TextField(
+                        value = durationFrom,
+                        onValueChange = { durationFrom = it },
+                        label = { Text("Duration From (hours)") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextField(
+                        value = durationTo,
+                        onValueChange = { durationTo = it },
+                        label = { Text("Duration To (hours)") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val filters = Filters(
+                    author = author,
+                    ratingFrom = ratingFrom.toIntOrNull(),
+                    ratingTo = ratingTo.toIntOrNull(),
+                    startDate = startDate,
+                    endDate = endDate,
+                    durationFrom = durationFrom.toFloatOrNull(),
+                    durationTo = durationTo.toFloatOrNull(),
+                    radius = radius.toFloatOrNull()
+                )
+                onApply(filters)
+            }) {
+                Text(text = "Apply")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text(text = "Cancel")
+            }
+        }
+    )
+}
+
+
 
 @Composable
 fun ObjectDetailDialog(
@@ -234,8 +435,8 @@ fun ObjectDetailDialog(
                         .padding(vertical = 16.dp)
                 )
                 Text(text = "Description: ${obj.description}")
-                Text(text = "Duration: ${obj.duration}")
-                Text(text = "Start Time: ${obj.startTime}")
+                Text(text = "Duration: ${formatDuration(obj.duration)} hours")
+                Text(text = "Start Time: ${formatTimestamp(obj.startTime)}")
                 Text(text = "Average Grade: ${obj.avgGrade}")
                 Text(text = "Posted by: ${obj.postedByUsername}")
 
@@ -302,12 +503,42 @@ fun AddObjectDialog(
     val objectState by objectViewModel.objectUIState
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
+    val calendar = Calendar.getInstance()
+
+    var selectedDate by remember { mutableStateOf("") }
+    var selectedTime by remember { mutableStateOf("") }
+
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         selectedImageUri = uri
         objectViewModel.onEvent(ObjectUIEvent.PhotoSelected(uri))
     }
+
+    val datePickerDialog = DatePickerDialog(
+        LocalContext.current,
+        { _, year, month, dayOfMonth ->
+            selectedDate = "$dayOfMonth/${month + 1}/$year"
+            calendar.set(Calendar.YEAR, year)
+            calendar.set(Calendar.MONTH, month)
+            calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    val timePickerDialog = TimePickerDialog(
+        LocalContext.current,
+        { _, hourOfDay, minute ->
+            selectedTime = "$hourOfDay:$minute"
+            calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+            calendar.set(Calendar.MINUTE, minute)
+        },
+        calendar.get(Calendar.HOUR_OF_DAY),
+        calendar.get(Calendar.MINUTE),
+        true
+    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -331,9 +562,7 @@ fun AddObjectDialog(
                     label = { Text("Title") },
                     isError = objectState.titleError != null,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 )
 
                 TextField(
@@ -342,39 +571,38 @@ fun AddObjectDialog(
                     label = { Text("Description") },
                     isError = objectState.descriptionError != null,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 )
 
-                TextField(
-                    value = objectState.startTime,
-                    onValueChange = { objectViewModel.onEvent(ObjectUIEvent.StartTimeChange(it)) },
-                    label = { Text("Start Time (Example: 16:45)") },
-                    isError = objectState.startTimeError != null,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                )
+                Button(onClick = { datePickerDialog.show() }) {
+                    Text(text = "Pick Date")
+                }
+
+                if (selectedDate.isNotEmpty()) {
+                    Text(text = "Selected Date: $selectedDate", modifier = Modifier.padding(8.dp))
+                }
+
+                Button(onClick = { timePickerDialog.show() }) {
+                    Text(text = "Pick Time")
+                }
+
+                if (selectedTime.isNotEmpty()) {
+                    Text(text = "Selected Time: $selectedTime", modifier = Modifier.padding(8.dp))
+                }
 
                 TextField(
-                    value = objectState.duration,
-                    onValueChange = { objectViewModel.onEvent(ObjectUIEvent.DurationChange(it)) },
-                    label = { Text("Duration (hours,minutes)") },
+                    value = objectState.duration.toString(),
+                    onValueChange = {
+                        val duration = it.toFloatOrNull() ?: 0f
+                        objectViewModel.onEvent(ObjectUIEvent.DurationChange(duration))
+                    },
+                    label = { Text("Duration (hours)") },
                     isError = objectState.durationError != null,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 )
 
-                Button(
-                    onClick = { galleryLauncher.launch("image/*") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp)
-                ) {
+                Button(onClick = { galleryLauncher.launch("image/*") }, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
                     Text(text = "Choose Photo")
                 }
 
@@ -382,19 +610,16 @@ fun AddObjectDialog(
                     Image(
                         painter = rememberImagePainter(it),
                         contentDescription = "Selected image",
-                        modifier = Modifier
-                            .size(128.dp)
-                            .padding(vertical = 16.dp)
+                        modifier = Modifier.size(128.dp).padding(vertical = 16.dp)
                     )
                 }
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    objectViewModel.onEvent(ObjectUIEvent.AddObjectClicked(onSuccess,currentLocation))
-                }
-            ) {
+            Button(onClick = {
+                val timestamp = calendar.timeInMillis
+                objectViewModel.onEvent(ObjectUIEvent.AddObjectClicked(onSuccess, currentLocation, timestamp))
+            }) {
                 Text(text = "Add Object")
             }
         },
@@ -405,5 +630,3 @@ fun AddObjectDialog(
         }
     )
 }
-
-

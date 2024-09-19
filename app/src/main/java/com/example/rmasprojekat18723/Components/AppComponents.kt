@@ -1,12 +1,13 @@
 package com.example.rmasprojekat18723.Components
 
+import android.app.DatePickerDialog
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,14 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,6 +42,13 @@ import com.example.rmasprojekat18723.ui.theme.Primary
 import com.example.rmasprojekat18723.ui.theme.TextColor
 import com.example.rmasprojekat18723.ui.theme.TextFieldColor
 import com.google.android.gms.maps.MapView
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+
 
 @Composable
 fun SignUpTextComponent(value : String , modifier : Modifier = Modifier){
@@ -176,4 +180,48 @@ private fun getMapLifecycleObserver(mapView: MapView): LifecycleEventObserver =
             else -> {}
         }
     }
+
+fun formatTimestamp(timestamp: Long): String {
+    val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+    return sdf.format(timestamp)
+}
+
+fun formatDuration(duration: Float): String {
+    return String.format("%.1f", duration)
+}
+
+@Composable
+fun DatePickerField(
+    label: String,
+    selectedDate: Long?,
+    onDateSelected: (Long) -> Unit
+) {
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance()
+
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val formattedDate = selectedDate?.let { dateFormat.format(Date(it)) } ?: "Select Date"
+
+    var displayDate by remember { mutableStateOf(formattedDate) }
+
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, monthOfYear, dayOfMonth ->
+            calendar.set(year, monthOfYear, dayOfMonth)
+            displayDate = dateFormat.format(calendar.time)
+            onDateSelected(calendar.timeInMillis)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    Text(
+        text = "$label: $displayDate",
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { datePickerDialog.show() }
+            .padding(8.dp)
+    )
+}
 

@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
+import com.example.rmasprojekat18723.Components.formatDuration
+import com.example.rmasprojekat18723.Components.formatTimestamp
 import com.example.rmasprojekat18723.data.ObjectUIEvent
 import com.example.rmasprojekat18723.data.ObjectUIState
 import com.example.rmasprojekat18723.data.ObjectViewModel
@@ -123,12 +125,12 @@ fun ObjectCard(obj: ObjectUIState) {
                 modifier = Modifier.padding(bottom = 4.dp)
             )
             Text(
-                text = "Duration: ${obj.duration}",
+                text = "Duration: ${formatDuration(obj.duration)} hours",
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
             Text(
-                text = "Start Time: ${obj.startTime}",
+                text = "Start Time: ${formatTimestamp(obj.startTime)}",
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 4.dp)
             )

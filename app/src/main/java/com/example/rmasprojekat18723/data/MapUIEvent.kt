@@ -6,5 +6,6 @@ sealed class MapUIEvent {
     data class LocationUpdate(val location: LatLng) : MapUIEvent()
     object LoadMarkers : MapUIEvent()
     data class ShowError(val error: String) : MapUIEvent()
+    data class ApplyFilters(val filters: Filters) : MapUIEvent()
 
 }
