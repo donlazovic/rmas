@@ -23,8 +23,13 @@ sealed class Route() {
 }
 
 @Composable
-fun MyNavigation(navHostController: NavHostController) {
-    NavHost(navController = navHostController , startDestination = "login_flow") {
+fun MyNavigation(navHostController: NavHostController, isUserLoggedIn: Boolean) {
+    val startDestination = if (isUserLoggedIn) {
+        Route.HomeScreen().name
+    } else {
+        "login_flow"
+    }
+    NavHost(navController = navHostController , startDestination = startDestination) {
         navigation(startDestination = Route.LoginScreen().name, route = "login_flow") {
             composable(route = Route.LoginScreen().name) {
                 LoginScreen(

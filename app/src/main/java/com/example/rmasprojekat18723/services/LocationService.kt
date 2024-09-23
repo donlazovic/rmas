@@ -1,3 +1,4 @@
+
 package com.example.rmasprojekat18723.services
 
 import android.app.Notification
@@ -25,6 +26,7 @@ class LocationService : Service() {
     private val db = FirebaseFirestore.getInstance()
 
     private var lastNotifiedUserId: String? = null
+    private val lastNotifiedTimes = mutableMapOf<String, Long>()
 
     override fun onCreate() {
         super.onCreate()
@@ -53,7 +55,7 @@ class LocationService : Service() {
 
         val notification: Notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Tracking Location")
-            .setContentText("Your location is being tracked, and you'll receive notifications about nearby users.")
+            .setContentText("Your location is being tracked, and you'll receive notifications about nearby objects.")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
             .build()
@@ -94,9 +96,19 @@ class LocationService : Service() {
                         }
 
                         val distance = location.distanceTo(objectLocation)
-                        if (distance < 100) {
-                            sendNotification(objectId, "Nearby Object", "$objectTitle is near your location.")
-                            lastNotifiedUserId = objectId
+                        if (distance < 200) {
+                            val currentTime = System.currentTimeMillis()
+                            val lastNotifiedTime = lastNotifiedTimes[objectId] ?: 0
+
+                            if (currentTime - lastNotifiedTime > 10000) {
+                                sendNotification(
+                                    objectId,
+                                    "Nearby Object",
+                                    "$objectTitle is near your location."
+                                )
+                                lastNotifiedUserId = objectId
+                                lastNotifiedTimes[objectId] = currentTime
+                            }
                         }
                     }
                 }
@@ -130,20 +142,11 @@ class LocationService : Service() {
         return null
     }
 
-    private fun updateUserLocationInFirestore(location: Location) {
-        val userId = "your_user_id" // zameni sa stvarnim userId
-        val userLocation = mapOf(
-            "latitude" to location.latitude,
-            "longitude" to location.longitude
-        )
 
-        db.collection("users").document(userId)
-            .set(userLocation)
-            .addOnSuccessListener {
-                Log.d("LocationService", "User location updated in Firestore.")
-            }
-            .addOnFailureListener { e ->
-                Log.w("LocationService", "Error updating location", e)
-            }
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForegroundService()
+        startLocationUpdates()
+        return START_STICKY
     }
+
 }

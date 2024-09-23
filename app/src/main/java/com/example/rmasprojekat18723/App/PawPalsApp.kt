@@ -1,3 +1,4 @@
+
 package com.example.rmasprojekat18723.App
 
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.rmasprojekat18723.Navigation.MyNavigation
 import com.example.rmasprojekat18723.Screens.LoginScreen
 import com.example.rmasprojekat18723.Screens.SignUpScreen
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun PawPalsApps() {
@@ -19,5 +21,10 @@ fun PawPalsApps() {
 
     }
     val navController = rememberNavController()
-    MyNavigation(navHostController = navController)
+
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val isUserLoggedIn = currentUser != null
+
+    MyNavigation(navHostController = navController, isUserLoggedIn = isUserLoggedIn)
+
 }

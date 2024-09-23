@@ -1,3 +1,4 @@
+
 package com.example.rmasprojekat18723.data
 
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +43,7 @@ class LogInViewModel : ViewModel() {
                             loginError = null
                         )
                         onSuccess()
-                        }
+                    }
                     else {
                         loginUIState.value = loginUIState.value.copy(
                             loginError = "Invalid email or password."

@@ -1,3 +1,4 @@
+
 package com.example.rmasprojekat18723.data
 
 import android.net.Uri

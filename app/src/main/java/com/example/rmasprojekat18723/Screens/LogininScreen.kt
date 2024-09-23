@@ -80,6 +80,7 @@ fun LoginScreen(onSignUpClick: () -> Unit, onLoginSuccess: () -> Unit , loginVie
                 .fillMaxWidth()
                 .heightIn(min = 50.dp)
                 .align(alignment = Alignment.Start),)
+
             Spacer(modifier = Modifier.height(40.dp))
 
             loginState.loginError?.let {
@@ -129,7 +130,9 @@ fun LoginScreen(onSignUpClick: () -> Unit, onLoginSuccess: () -> Unit , loginVie
                     )
                 },
                 errorStatus = loginViewModel.loginUIState.value.passwordError)
+
             Spacer(modifier = Modifier.height(30.dp))
+
             Button( onClick = {loginViewModel.onEvent(LogInUIEvent.LoginClicked(onLoginSuccess))} , modifier = Modifier.fillMaxWidth() , colors = ButtonDefaults.buttonColors(
                 Color.Transparent), enabled = isFieldsEmpty) {
                 Box(modifier = Modifier.fillMaxWidth().heightIn(48.dp)
@@ -144,6 +147,7 @@ fun LoginScreen(onSignUpClick: () -> Unit, onLoginSuccess: () -> Unit , loginVie
                 }
             }
             Spacer(modifier = Modifier.weight(1f))
+
             DontHaveAccount(onSignUpClick,modifier = Modifier.fillMaxSize().wrapContentSize(align = Alignment.BottomCenter))
 
         }

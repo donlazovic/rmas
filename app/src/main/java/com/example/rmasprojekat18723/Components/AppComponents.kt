@@ -106,7 +106,7 @@ fun TextFieldComponent(
                 focusedBorderColor = Primary,
                 focusedLabelColor = Primary,
                 cursorColor = Primary,
-                containerColor = BgColor
+                containerColor = Color.White
             ),
             maxLines = 1,
             singleLine = true,
@@ -141,7 +141,9 @@ fun DontHaveAccount(onSignUpClick: () -> Unit ,modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text("Don't have an account?", color = Color.White , fontSize = 16.sp)
+
         Spacer(Modifier.width(16.dp))
+
         TextButton(onClick = onSignUpClick) {
             Text("Register Here" , fontSize = 16.sp)
 

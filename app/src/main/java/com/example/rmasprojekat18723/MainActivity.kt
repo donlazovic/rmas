@@ -1,3 +1,4 @@
+
 package com.example.rmasprojekat18723
 
 import android.Manifest
@@ -56,7 +57,7 @@ class MainActivity : ComponentActivity() {
         } else {
             true
         }
-        
+
         if (locationPermissionGranted && coarseLocationPermissionGranted && notificationPermissionGranted) {
             Toast.makeText(this, "All permissions granted!", Toast.LENGTH_SHORT).show()
         } else {

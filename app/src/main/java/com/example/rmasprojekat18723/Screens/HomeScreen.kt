@@ -1,3 +1,4 @@
+
 package com.example.rmasprojekat18723.Screens
 
 import android.Manifest
@@ -8,6 +9,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.foundation.background
@@ -44,7 +46,12 @@ const val REQUEST_CODE_LOCATION_PERMISSION = 1002
 @Composable
 fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit, showAllObjects: () -> Unit, userLeaderboard: () -> Unit, signupViewModel: SignUpViewModel = viewModel()) {
     val context = LocalContext.current
-    var isServiceRunning by rememberSaveable { mutableStateOf(false) }
+    val sharedPrefs = context.getSharedPreferences("LocationServicePrefs", Context.MODE_PRIVATE)
+    var isServiceRunning by rememberSaveable { mutableStateOf(sharedPrefs.getBoolean("isServiceRunning", false)) }
+
+    LaunchedEffect(Unit) {
+        isServiceRunning = sharedPrefs.getBoolean("isServiceRunning", false)
+    }
 
     Surface(
         modifier = Modifier
@@ -157,6 +164,7 @@ fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit, showAllObjects: () -> 
                 onClick = {
                     checkNotificationPermissionAndStartService(context, isServiceRunning) { isRunning ->
                         isServiceRunning = isRunning
+                        saveServiceStatus(sharedPrefs, isRunning)
                     }
 
                 },
@@ -191,7 +199,13 @@ fun HomeScreen(signOut: () -> Unit, mapClick: () -> Unit, showAllObjects: () -> 
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { signupViewModel.onEvent(SignUpUIEvent.SignOutClicked(signOut)) },
+                onClick = {
+                    if (isServiceRunning) {
+                        stopLocationService(context)
+                        isServiceRunning = false
+                        saveServiceStatus(sharedPrefs, false)
+                    }
+                    signupViewModel.onEvent(SignUpUIEvent.SignOutClicked(signOut)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(48.dp),
@@ -292,6 +306,12 @@ private fun startLocationService(context: Context) {
 private fun stopLocationService(context: Context) {
     val intent = Intent(context, LocationService::class.java)
     context.stopService(intent)
+}
+
+fun saveServiceStatus(sharedPrefs: SharedPreferences, isRunning: Boolean) {
+    val editor = sharedPrefs.edit()
+    editor.putBoolean("isServiceRunning", isRunning)
+    editor.apply()
 }
 
 @Preview(showBackground = true)
